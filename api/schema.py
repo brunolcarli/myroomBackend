@@ -4,14 +4,16 @@ from api.models import UserModel, Room, Article, Photo, ThreadModel, ThreadComme
 
 
 class UserType(graphene.ObjectType):
+    id = graphene.ID()
     username = graphene.String()
     avatar = graphene.String()
     full_name = graphene.String()
     date_joined = graphene.Date()
-    # room
+    room = graphene.Field('api.schema.RoomType')
 
 
 class RoomType(graphene.ObjectType):
+    id = graphene.ID()
     name = graphene.String()
     description = graphene.String()
     user = graphene.Field(UserType)
@@ -21,20 +23,37 @@ class RoomType(graphene.ObjectType):
     photos_section_active = graphene.Boolean()
     articles_section_active = graphene.Boolean()
     threads_section_active = graphene.Boolean()
-    # photos
-    # author
-    # threads
+    photos = graphene.List('api.schema.PhotoType')
+    articles = graphene.List('api.schema.ArticleType')
+    threads = graphene.List('api.schema.ThreadType')
+
+    def resolve_photos(self, info, **kwargs):
+        if not self.photos_section_active:
+            return []
+        return self.photo_set.all()
+
+    def resolve_articles(self, info, **kwargs):
+        if not self.articles_section_active:
+            return []
+        return self.article_set.all()
+    
+    def resolve_threads(self, info, **kwargs):
+        if not self.threads_section_active:
+            return []
+        return self.threadmodel_set.all()
 
 
 class ArticleType(graphene.ObjectType):
+    id = graphene.ID()
     room = graphene.Field(RoomType)
     author = graphene.Field(UserType)
     title = graphene.String()
     content = graphene.String()
-    post_datetime = graphene.DateTime
+    post_datetime = graphene.DateTime()
 
 
 class PhotoType(graphene.ObjectType):
+    id = graphene.ID()
     room = graphene.Field(RoomType)
     user = graphene.Field(UserType)
     data = graphene.String()
@@ -44,6 +63,7 @@ class PhotoType(graphene.ObjectType):
 
 
 class ThreadType(graphene.ObjectType):
+    id = graphene.ID()
     name = graphene.String()
     content = graphene.String()
     creation_datetime = graphene.DateTime()
@@ -52,9 +72,14 @@ class ThreadType(graphene.ObjectType):
     last_comment_datetime = graphene.DateTime()
     public = graphene.Boolean()
     num_comments = graphene.Int()
+    comments = graphene.List('api.schema.ThreadCommentType')
+
+    def resolve_comments(self, info, **kwargs):
+        return self.threadcomment_set.all()
 
 
 class ThreadCommentType(graphene.ObjectType):
+    id = graphene.ID()
     author = graphene.Field(UserType)
     thread = graphene.Field(ThreadType)
     post_datetime = graphene.DateTime()
