@@ -91,26 +91,47 @@ class Query:
     def resolve_version(self, info, **kwargs):
         return settings.VERSION
 
-    users = graphene.List(UserType)
+    users = graphene.List(
+        UserType,
+        username__icontains=graphene.String(),
+        room__name__icontains=graphene.String()
+    )
     def resolve_users(self, info, **kwargs):
         return UserModel.objects.filter(**kwargs)
 
-    rooms = graphene.List(RoomType)
+    rooms = graphene.List(
+        RoomType,
+        name__icontains=graphene.String(),
+        user__username__icontains=graphene.String()
+    )
     def resolve_rooms(self, info, **kwargs):
         return Room.objects.filter(**kwargs)
 
-    articles = graphene.List(ArticleType)
+    articles = graphene.List(
+        ArticleType,
+        room_id=graphene.ID(required=True)
+    )
     def resolve_articles(self, info, **kwargs):
         return Article.objects.filter(**kwargs)
 
-    photos = graphene.List(PhotoType)
+    photos = graphene.List(
+        PhotoType,
+        room_id=graphene.ID(required=True)
+    )
     def resolve_photos(self, info, **kwargs):
         return Photo.objects.filter(**kwargs)
 
-    threads = graphene.List(ThreadType)
+    threads = graphene.List(
+        ThreadType,
+        room_id=graphene.ID(required=True),
+        name__icontains=graphene.String()
+    )
     def resolve_threads(self, info, **kwargs):
         return ThreadModel.objects.filter(**kwargs)
 
-    thread_comments = graphene.List(ThreadCommentType)
+    thread_comments = graphene.List(
+        ThreadCommentType,
+        thread_id=graphene.ID(required=True)
+    )
     def resolve_thread_comments(self, info, **kwargs):
         return ThreadComment.objects.filter(**kwargs)
