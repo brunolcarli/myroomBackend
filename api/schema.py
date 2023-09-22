@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import uuid4
 import graphene
 import graphql_jwt
 from django.conf import settings
@@ -163,7 +164,6 @@ class SignUp(graphene.relay.ClientIDMutation):
         password = graphene.String(required=True)
 
     def mutate_and_get_payload(self, info, **kwargs):
-
         # Check if username or email already exists
         try:
             UserModel.objects.get(username=kwargs['username'])
@@ -185,7 +185,7 @@ class SignUp(graphene.relay.ClientIDMutation):
         user.save()
 
         # Create standard room for this user
-        room = Room.objects.create(name=f'{user.username}{user.id}_room', user=user)
+        room = Room.objects.create(name=f'{user.username}{str(uuid4())[:100]}', user=user)
         room.save()
 
         return SignUp(user)
@@ -324,6 +324,21 @@ class CreateThreadComment(graphene.relay.ClientIDMutation):
         thread.save()
 
         return CreateThreadComment(comment)
+
+
+class UpdateRoom(graphene.relay.ClientIDMutation):
+    room = graphene.Field(RoomType)
+
+    class Input:
+        room_id = graphene.ID(required=True)
+        name = graphene.String()
+        description = graphene.String()
+        default_background_active = graphene.Boolean()
+        photos_section_active = graphene.Boolean()
+        articles_section_active = graphene.Boolean()
+        threads_section_active = graphene.Boolean()
+        # room picture
+        # background picture
 
 
 class Mutation:
