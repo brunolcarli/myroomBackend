@@ -254,8 +254,43 @@ class CreateArticle(graphene.relay.ClientIDMutation):
         return CreateArticle(article)
 
 
+class CreateThread(graphene.relay.ClientIDMutation):
+    thread = graphene.Field(ThreadType)
+
+    class Input:
+        name = graphene.String(required=True)
+        content = graphene.String(required=True)
+        public = graphene.Boolean()
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            ThreadModel.objects.get(name=kwargs['name'], author=user, room=user.room)
+        except ThreadModel.DoesNotExist:
+            pass
+        else:
+            raise Exception('Thread name already exists in this room')
+
+        thread = ThreadModel.objects.create(
+            name=kwargs['name'],
+            content=kwargs['content'],
+            author=user,
+            room=user.room,
+            public=kwargs.get('public', True)
+        )
+        thread.save()
+
+        return CreateThread(thread)
+
 class Mutation:
+    # access operations
     sign_up = SignUp.Field()
     sign_in = SignIn.Field()
 
+    # object creation operations
     create_article = CreateArticle.Field()
+    create_thread = CreateThread.Field()
