@@ -3,6 +3,7 @@ import graphene
 import graphql_jwt
 from django.conf import settings
 from api.models import UserModel, Room, Article, Photo, ThreadModel, ThreadComment
+from api.user_auth import access_required
 
 
 class UserType(graphene.ObjectType):
@@ -222,6 +223,39 @@ class SignIn(graphene.relay.ClientIDMutation):
         return SignIn(session.token)
 
 
+class CreateArticle(graphene.relay.ClientIDMutation):
+    article = graphene.Field(ArticleType)
+
+    class Input:
+        title = graphene.String(required=True)
+        content = graphene.String(required=True)
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            Article.objects.get(title=kwargs['title'], author=user, room=user.room)
+        except Article.DoesNotExist:
+            pass
+        else:
+            raise Exception('Article title already exists in this room')
+
+        article = Article.objects.create(
+            title=kwargs['title'],
+            content=kwargs['content'],
+            author=user,
+            room=user.room
+        )
+        article.save()
+
+        return CreateArticle(article)
+
+
 class Mutation:
     sign_up = SignUp.Field()
     sign_in = SignIn.Field()
+
+    create_article = CreateArticle.Field()
