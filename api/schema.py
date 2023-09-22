@@ -286,6 +286,46 @@ class CreateThread(graphene.relay.ClientIDMutation):
 
         return CreateThread(thread)
 
+
+class CreateThreadComment(graphene.relay.ClientIDMutation):
+    thread_comment = graphene.Field(ThreadCommentType)
+
+    class Input:
+        thread_id = graphene.ID(required=True)
+        content = graphene.String(required=True)
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            thread = ThreadModel.objects.get(id=kwargs['thread_id'])
+        except ThreadModel.DoesNotExist:
+            raise Exception('Invalid or inexistent thread')
+
+        if not thread.public and not (thread.author.id == user.id):
+            raise Exception('Thread is not public, cannot post comment on non public thread')
+
+        if thread.num_comments > 0:
+            if thread.threadcomment_set.last().author.id == user.id:
+                raise Exception('Flood Error|Cannot post comment in sequence.')
+
+        comment = ThreadComment.objects.create(
+            author=user,
+            content=kwargs['content'],
+            thread=thread
+        )
+        comment.save()
+
+        thread.num_comments += 1
+        thread.last_comment_datetime = comment.post_datetime
+        thread.save()
+
+        return CreateThreadComment(comment)
+
+
 class Mutation:
     # access operations
     sign_up = SignUp.Field()
@@ -294,3 +334,4 @@ class Mutation:
     # object creation operations
     create_article = CreateArticle.Field()
     create_thread = CreateThread.Field()
+    create_thread_comment = CreateThreadComment.Field()
