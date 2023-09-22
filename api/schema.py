@@ -86,6 +86,12 @@ class ThreadCommentType(graphene.ObjectType):
     content = graphene.String()
 
 
+############################
+#
+# Query
+#
+############################
+
 class Query:
     version = graphene.String()
     def resolve_version(self, info, **kwargs):
@@ -135,3 +141,53 @@ class Query:
     )
     def resolve_thread_comments(self, info, **kwargs):
         return ThreadComment.objects.filter(**kwargs)
+
+
+############################
+#
+# Mutation
+#
+############################
+
+
+class SignUp(graphene.relay.ClientIDMutation):
+    user = graphene.Field(UserType)
+
+    class Input:
+        username = graphene.String(required=True)
+        email = graphene.String(required=True)
+        full_name = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    def mutate_and_get_payload(self, info, **kwargs):
+
+        # Check if username or email already exists
+        try:
+            UserModel.objects.get(username=kwargs['username'])
+        except UserModel.DoesNotExist:
+            pass
+        else:
+            raise Exception('Username already in use')
+
+        try:
+            UserModel.objects.get(email=kwargs['email'])
+        except UserModel.DoesNotExist:
+            pass
+        else:
+            raise Exception('Email already in use')
+
+        # Create user object
+        user = UserModel.objects.create(username=kwargs['username'], email=kwargs['email'], full_name=kwargs['full_name'])
+        user.set_password(kwargs['password'])
+        user.save()
+
+        # Create standard room for this user
+        room = Room.objects.create(name=f'{user.username}{user.id}_room', user=user)
+        room.save()
+
+        return SignUp(user)
+
+
+class Mutation:
+    sign_up = SignUp.Field()
+
