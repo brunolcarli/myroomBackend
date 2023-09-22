@@ -1,4 +1,6 @@
+from datetime import datetime
 import graphene
+import graphql_jwt
 from django.conf import settings
 from api.models import UserModel, Room, Article, Photo, ThreadModel, ThreadComment
 
@@ -188,6 +190,38 @@ class SignUp(graphene.relay.ClientIDMutation):
         return SignUp(user)
 
 
+class SignIn(graphene.relay.ClientIDMutation):
+    token = graphene.String()
+
+    class Input:
+        email = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    def mutate_and_get_payload(self, info, **kwargs):
+        try:
+            user = UserModel.objects.get(
+                email=kwargs['email']
+            )
+        except UserModel.DoesNotExist:
+            raise Exception('User not found')
+
+        if not user.check_password(kwargs['password']):
+            raise Exception('Invalid password')
+
+        user.last_login = datetime.now()
+        user.save()
+
+        session = graphql_jwt.ObtainJSONWebToken.mutate(
+            self,
+            info,
+            username=user.username,
+            email=user.email,
+            password=kwargs['password']
+        )
+
+        return SignIn(session.token)
+
+
 class Mutation:
     sign_up = SignUp.Field()
-
+    sign_in = SignIn.Field()
