@@ -38,6 +38,16 @@ class RoomType(graphene.ObjectType):
     articles = graphene.List('api.schema.ArticleType')
     threads = graphene.List('api.schema.ThreadType')
 
+    def resolve_room_picture(self, info, **kwargs):
+        if not self.room_picture:
+            return
+        return b64encode(pickle.loads(self.room_picture)).decode('utf-8')
+    
+    def resolve_background_picture(self, info, **kwargs):
+        if not self.background_picture:
+            return
+        return b64encode(pickle.loads(self.background_picture)).decode('utf-8')
+
     def resolve_photos(self, info, **kwargs):
         if not self.photos_section_active:
             return []
@@ -344,8 +354,6 @@ class UpdateRoom(graphene.relay.ClientIDMutation):
         photos_section_active = graphene.Boolean()
         articles_section_active = graphene.Boolean()
         threads_section_active = graphene.Boolean()
-        # room picture
-        # background picture
 
     @access_required
     def mutate_and_get_payload(self, info, **kwargs):
@@ -378,6 +386,15 @@ class UpdateRoom(graphene.relay.ClientIDMutation):
 
         if kwargs.get('threads_section_active') is not None:
             room.threads_section_active = kwargs['threads_section_active']
+
+        room_picture = info.context.FILES.get('room_picture')
+        background_picture = info.context.FILES.get('background_picture')
+
+        if room_picture is not None:
+            room.room_picture = pickle.dumps(room_picture.read())
+
+        if background_picture is not None:
+            room.background_picture = pickle.dumps(background_picture.read())
 
         room.save()
         return UpdateRoom(room)
