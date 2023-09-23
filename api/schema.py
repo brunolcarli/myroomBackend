@@ -546,6 +546,8 @@ class DeleteThreadComment(graphene.relay.ClientIDMutation):
             raise Exception('Unauthorized')
 
         comment.delete()
+        thread.num_comments -= 1
+        thread.save()
 
         return DeleteThreadComment(comment)
 
