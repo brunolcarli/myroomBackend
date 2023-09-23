@@ -403,6 +403,33 @@ class UpdateArticle(graphene.relay.ClientIDMutation):
         return UpdateArticle(article)
 
 
+class UpdateThread(graphene.relay.ClientIDMutation):
+    thread = graphene.Field(ThreadType)
+
+    class Input:
+        thread_id = graphene.ID(required=True)
+        content = graphene.content(required=True)
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            thread = ThreadModel.objects.get(id=kwargs['thread_id'])
+        except ThreadModel.DoesNotExist:
+            raise Exception('Invalid or inexistent thread')
+
+        if thread.author.id != user.id:
+            raise Exception('AUTH ERROR|Unauthorized')
+
+        thread.content = kwargs['content']
+        thread.save()
+
+        return UpdateThread(thread)
+
+
 class Mutation:
     # access operations
     sign_up = SignUp.Field()
@@ -416,3 +443,4 @@ class Mutation:
     # object update operations
     update_room = UpdateRoom.Field()
     update_article = UpdateArticle.Field()
+    update_thread = UpdateThread.Field()
