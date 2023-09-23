@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class UserModel(User):
-    avatar = models.FileField(null=True)
+    avatar = models.BinaryField(null=True)
     full_name = models.CharField(max_length=255, null=False, blank=False)
 
 
@@ -11,8 +11,8 @@ class Room(models.Model):
     name = models.CharField(max_length=128, null=False, blank=False, unique=True)
     description = models.TextField(null=True)
     user = models.OneToOneField(UserModel, null=True, on_delete=models.CASCADE)
-    room_picture = models.FileField(null=True)
-    background_picture = models.FileField(null=True)
+    room_picture = models.BinaryField(null=True)
+    background_picture = models.BinaryField(null=True)
     default_background_active = models.BooleanField(default=True)
     photos_section_active = models.BooleanField(default=True)
     articles_section_active = models.BooleanField(default=True)
@@ -30,7 +30,7 @@ class Article(models.Model):
 class Photo(models.Model):
     room = models.ForeignKey(Room, null=False, on_delete=models.CASCADE)
     user = models.ForeignKey(UserModel, null=False, on_delete=models.CASCADE)
-    data = models.FileField(null=False, blank=False)
+    data = models.BinaryField(null=False, blank=False)
     description = models.TextField(null=True, blank=True)
     public = models.BooleanField(default=True)
     post_datetime = models.DateTimeField(auto_now_add=True)
