@@ -488,7 +488,32 @@ class DeleteArticle(graphene.relay.ClientIDMutation):
 
         article.delete()
 
-        return DeleteArticle(article=article)
+        return DeleteArticle(article)
+
+
+class DeleteThread(graphene.relay.ClientIDMutation):
+    thread = graphene.Field(ThreadType)
+
+    class Input:
+        thread_id = graphene.ID(required=True)
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            thread = ThreadModel.objects.get(id=kwargs['thread_id'])
+        except ThreadModel.DoesNotExist:
+            raise Exception('Invalid or inexistent thread')        
+
+        if thread.author.id != user.id:
+            raise Exception('AUTH ERROR|Unauthorized')
+
+        thread.delete()
+
+        return DeleteThread(thread)
 
 
 class Mutation:
@@ -509,3 +534,4 @@ class Mutation:
 
     # object delete operations
     delete_article = DeleteArticle.Field()
+    delete_thread = DeleteThread.Field()
