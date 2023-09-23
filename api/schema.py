@@ -1,3 +1,5 @@
+from base64 import b64encode
+import pickle
 from datetime import datetime
 from uuid import uuid4
 import graphene
@@ -14,6 +16,11 @@ class UserType(graphene.ObjectType):
     full_name = graphene.String()
     date_joined = graphene.Date()
     room = graphene.Field('api.schema.RoomType')
+
+    def resolve_avatar(self, info, **kwargs):
+        if not self.avatar:
+            return
+        return b64encode(pickle.loads(self.avatar)).decode('utf-8')
 
 
 class RoomType(graphene.ObjectType):
@@ -430,6 +437,30 @@ class UpdateThread(graphene.relay.ClientIDMutation):
         return UpdateThread(thread)
 
 
+class UpdateUser(graphene.relay.ClientIDMutation):
+    user = graphene.Field(UserType)
+
+    class Input:
+        full_name = graphene.String()
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        if kwargs.get('full_name') is not None:
+            user.full_name = kwargs['full_name']
+
+        avatar = info.context.FILES.get('avatar')
+        if avatar is not None:
+            user.avatar = pickle.dumps(avatar.read())
+
+        user.save()
+
+        return UpdateUser(user)
+
+
 class UpdateThreadComment(graphene.relay.ClientIDMutation):
     comment = graphene.Field(ThreadCommentType)
 
@@ -563,6 +594,7 @@ class Mutation:
     create_thread_comment = CreateThreadComment.Field()
 
     # object update operations
+    update_user = UpdateUser.Field()
     update_room = UpdateRoom.Field()
     update_article = UpdateArticle.Field()
     update_thread = UpdateThread.Field()
