@@ -376,6 +376,33 @@ class UpdateRoom(graphene.relay.ClientIDMutation):
         return UpdateRoom(room)
 
 
+class UpdateArticle(graphene.relay.ClientIDMutation):
+    article = graphene.Field(ArticleType)
+
+    class Input:
+        article_id = graphene.ID(required=True)
+        content = graphene.String(required=True)
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            article = Article.objects.get(id=kwargs['article_id'])
+        except Article.DoesNotExist:
+            raise Exception('Invalid or inexistent article')
+
+        if article.author.id != user.id:
+            raise Exception('AUTH ERROR|Unauthorized')
+
+        article.content = kwargs['content']
+        article.save()
+
+        return UpdateArticle(article)
+
+
 class Mutation:
     # access operations
     sign_up = SignUp.Field()
@@ -388,3 +415,4 @@ class Mutation:
 
     # object update operations
     update_room = UpdateRoom.Field()
+    update_article = UpdateArticle.Field()
