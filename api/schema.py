@@ -340,6 +340,41 @@ class UpdateRoom(graphene.relay.ClientIDMutation):
         # room picture
         # background picture
 
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            room = Room.objects.get(id=kwargs['room_id'])
+        except Room.DoesNotExist:
+            raise Exception('Invalid or inexistent room')
+
+        if room.user.id != user.id:
+            raise Exception('AUTH ERROR|Unauthorized')
+
+        if kwargs.get('name') is not None:
+            room.name = kwargs['name']
+
+        if kwargs.get('description') is not None:
+            room.description = kwargs['description']
+
+        if kwargs.get('default_background_active') is not None:
+            room.default_background_active = kwargs['default_background_active']
+
+        if kwargs.get('photos_section_active') is not None:
+            room.photos_section_active = kwargs['photos_section_active']
+
+        if kwargs.get('articles_section_active') is not None:
+            room.articles_section_active = kwargs['articles_section_active']
+
+        if kwargs.get('threads_section_active') is not None:
+            room.threads_section_active = kwargs['threads_section_active']
+
+        room.save()
+        return UpdateRoom(room)
+
 
 class Mutation:
     # access operations
@@ -350,3 +385,6 @@ class Mutation:
     create_article = CreateArticle.Field()
     create_thread = CreateThread.Field()
     create_thread_comment = CreateThreadComment.Field()
+
+    # object update operations
+    update_room = UpdateRoom.Field()
