@@ -430,6 +430,42 @@ class UpdateThread(graphene.relay.ClientIDMutation):
         return UpdateThread(thread)
 
 
+class UpdateThreadComment(graphene.relay.ClientIDMutation):
+    comment = graphene.Field(ThreadCommentType)
+
+    class Input:
+        comment_id = graphene.ID(required=True)
+        thread_id = graphene.ID(required=True)
+        content = graphene.String(required=True)
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            thread = ThreadModel.objects.get(id=kwargs['thread_id'])
+        except ThreadModel.DoesNotExist:
+            raise Exception('Invalid or inexistent thread')
+
+        try:
+            comment = ThreadComment.objects.get(id=kwargs['comment_id'])
+        except ThreadComment.DoesNotExist:
+            raise Exception('Invalid or inexistent comment')
+
+        if comment.thread.id != thread.id:
+            raise Exception('Invalid requested content')
+
+        if comment.author.id != user.id:
+            raise Exception('AUTH ERROR|Unauthorized')
+
+        comment.content = kwargs['content']
+        comment.save()
+
+        return UpdateThreadComment(comment)
+
+
 class Mutation:
     # access operations
     sign_up = SignUp.Field()
@@ -444,3 +480,4 @@ class Mutation:
     update_room = UpdateRoom.Field()
     update_article = UpdateArticle.Field()
     update_thread = UpdateThread.Field()
+    update_thread_comment = UpdateThreadComment.Field()
