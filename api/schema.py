@@ -408,7 +408,7 @@ class UpdateThread(graphene.relay.ClientIDMutation):
 
     class Input:
         thread_id = graphene.ID(required=True)
-        content = graphene.content(required=True)
+        content = graphene.String(required=True)
 
     @access_required
     def mutate_and_get_payload(self, info, **kwargs):
@@ -481,3 +481,5 @@ class Mutation:
     update_article = UpdateArticle.Field()
     update_thread = UpdateThread.Field()
     update_thread_comment = UpdateThreadComment.Field()
+
+    # delete 
