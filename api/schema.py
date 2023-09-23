@@ -516,6 +516,40 @@ class DeleteThread(graphene.relay.ClientIDMutation):
         return DeleteThread(thread)
 
 
+class DeleteThreadComment(graphene.relay.ClientIDMutation):
+    comment = graphene.Field(ThreadCommentType)
+
+    class Input:
+        comment_id = graphene.ID(required=True)
+        thread_id = graphene.ID(required=True)
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            thread = ThreadModel.objects.get(id=kwargs['thread_id'])
+        except ThreadModel.DoesNotExist:
+            raise Exception('Invalid or inexistent thread')        
+
+        try:
+            comment = ThreadComment.objects.get(id=kwargs['comment_id'])
+        except ThreadComment.DoesNotExist:
+            raise Exception('Invalid or inexistent comment')
+
+        if thread.id != comment.thread.id:
+            raise Exception('Invalid requested data')
+
+        if not comment.author.id == user.id and not thread.author.id == user.id:
+            raise Exception('Unauthorized')
+
+        comment.delete()
+
+        return DeleteThreadComment(comment)
+
+
 class Mutation:
     # access operations
     sign_up = SignUp.Field()
@@ -535,3 +569,5 @@ class Mutation:
     # object delete operations
     delete_article = DeleteArticle.Field()
     delete_thread = DeleteThread.Field()
+    delete_thread_comment = DeleteThreadComment.Field()
+    
