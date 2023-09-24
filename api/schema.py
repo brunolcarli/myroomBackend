@@ -16,6 +16,7 @@ class UserType(graphene.ObjectType):
     full_name = graphene.String()
     date_joined = graphene.Date()
     room = graphene.Field('api.schema.RoomType')
+    birthdate = graphene.Date()
 
     def resolve_avatar(self, info, **kwargs):
         if not self.avatar:
@@ -181,6 +182,7 @@ class SignUp(graphene.relay.ClientIDMutation):
         username = graphene.String(required=True)
         email = graphene.String(required=True)
         full_name = graphene.String(required=True)
+        birthdate = graphene.Date(required=True)
         password = graphene.String(required=True)
 
     def mutate_and_get_payload(self, info, **kwargs):
@@ -199,8 +201,19 @@ class SignUp(graphene.relay.ClientIDMutation):
         else:
             raise Exception('Email already in use')
 
+        birthdate = kwargs['birthdate']
+        now = datetime.now().date()
+        if (now - birthdate).days / 365 < 18:
+            raise Exception('NOT ALLOWEDAge must be over 18')
+
+
         # Create user object
-        user = UserModel.objects.create(username=kwargs['username'], email=kwargs['email'], full_name=kwargs['full_name'])
+        user = UserModel.objects.create(
+            username=kwargs['username'],
+            email=kwargs['email'],
+            full_name=kwargs['full_name'],
+            birthdate=birthdate
+        )
         user.set_password(kwargs['password'])
         user.save()
 
