@@ -621,7 +621,7 @@ class DeleteThreadComment(graphene.relay.ClientIDMutation):
         try:
             thread = ThreadModel.objects.get(id=kwargs['thread_id'])
         except ThreadModel.DoesNotExist:
-            raise Exception('Invalid or inexistent thread')        
+            raise Exception('Invalid or inexistent thread')
 
         try:
             comment = ThreadComment.objects.get(id=kwargs['comment_id'])
@@ -639,6 +639,36 @@ class DeleteThreadComment(graphene.relay.ClientIDMutation):
         thread.save()
 
         return DeleteThreadComment(comment)
+
+
+class DeletePhoto(graphene.relay.ClientIDMutation):
+    photo = graphene.Field(PhotoType)
+
+    class Input:
+        room_id = graphene.ID(required=True)
+        photo_id = graphene.ID(required=True)
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            photo = Photo.objects.get(id=kwargs['photo_id'])
+        except Photo.DoesNotExist:
+            raise Exception('Invalid or inexistent room')
+
+        try:
+            room = Room.objects.get(id=kwargs['room_id'])
+        except Room.DoesNotExist:
+            raise Exception('Invalid or inexistent room')
+
+        if (room.id != user.room.id) or (photo.user.id != user.id): 
+            raise Exception('Unauthorized')
+
+        photo.delete()
+        return DeletePhoto(photo)
 
 
 class Mutation:
@@ -663,4 +693,4 @@ class Mutation:
     delete_article = DeleteArticle.Field()
     delete_thread = DeleteThread.Field()
     delete_thread_comment = DeleteThreadComment.Field()
-    
+    delete_photo = DeletePhoto.Field()
