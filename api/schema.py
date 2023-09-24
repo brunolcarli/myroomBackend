@@ -82,6 +82,9 @@ class PhotoType(graphene.ObjectType):
     public = graphene.Boolean()
     post_datetime = graphene.DateTime()
 
+    def resolve_data(self, info, **kwargs):
+        return b64encode(pickle.loads(self.data)).decode('utf-8')
+
 
 class ThreadType(graphene.ObjectType):
     id = graphene.ID()
@@ -238,6 +241,44 @@ class SignIn(graphene.relay.ClientIDMutation):
         )
 
         return SignIn(session.token)
+
+
+class CreatePhoto(graphene.relay.ClientIDMutation):
+    photo = graphene.Field(PhotoType)
+
+    class Input:
+        room_id = graphene.ID(required=True)
+        description = graphene.String()
+        public = graphene.Boolean()
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        user = kwargs.get('user')
+        if not user:
+            raise Exception('AUTH ERROR|Invalid anonymous request')
+
+        try:
+            room = Room.objects.get(id=kwargs['room_id'])
+        except Room.DoesNotExist:
+            raise Exception('Invalid or inexistent room')
+    
+        if room.id != user.room.id:
+            raise Exception('Unauthorized')
+
+        data  = info.context.FILES.get('photo')
+        if not data:
+            raise Exception('Must send a image file.')
+
+        photo = Photo.objects.create(
+            room=room,
+            user=user,
+            description=kwargs.get('description'),
+            public=kwargs.get('public', True),
+            data=pickle.dumps(data.read())
+        )
+        photo.save()
+
+        return CreatePhoto(photo)
 
 
 class CreateArticle(graphene.relay.ClientIDMutation):
@@ -609,6 +650,7 @@ class Mutation:
     create_article = CreateArticle.Field()
     create_thread = CreateThread.Field()
     create_thread_comment = CreateThreadComment.Field()
+    create_photo = CreatePhoto.Field()
 
     # object update operations
     update_user = UpdateUser.Field()
