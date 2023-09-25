@@ -122,6 +122,37 @@ class Query:
     def resolve_version(self, info, **kwargs):
         return settings.VERSION
 
+    # Single object response query
+
+    user = graphene.Field(
+        UserType,
+        email=graphene.String(required=True)
+    )
+
+    @access_required
+    def resolve_user(self, info, **kwargs):
+        return UserModel.objects.get(email=kwargs['email'])
+
+    room = graphene.Field(
+        RoomType,
+        id=graphene.ID(required=True)
+    )
+
+    @access_required
+    def resolve_room(self, info, **kwargs):
+        return Room.objects.get(id=kwargs['id'])
+
+    thread = graphene.Field(
+        ThreadType,
+        id=graphene.ID(required=True)
+    )
+
+    @access_required
+    def resolve_thread(self, info, **kwargs):
+        return ThreadModel.objects.get(id=kwargs['id'])
+
+    # List response queries
+
     users = graphene.List(
         UserType,
         username__icontains=graphene.String(),
