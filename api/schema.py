@@ -158,6 +158,8 @@ class Query:
         username__icontains=graphene.String(),
         room__name__icontains=graphene.String()
     )
+
+    @access_required
     def resolve_users(self, info, **kwargs):
         return UserModel.objects.filter(**kwargs)
 
@@ -166,6 +168,8 @@ class Query:
         name__icontains=graphene.String(),
         user__username__icontains=graphene.String()
     )
+
+    @access_required
     def resolve_rooms(self, info, **kwargs):
         return Room.objects.filter(**kwargs)
 
@@ -173,6 +177,8 @@ class Query:
         ArticleType,
         room_id=graphene.ID(required=True)
     )
+
+    @access_required
     def resolve_articles(self, info, **kwargs):
         return Article.objects.filter(**kwargs)
 
@@ -180,6 +186,8 @@ class Query:
         PhotoType,
         room_id=graphene.ID(required=True)
     )
+
+    @access_required
     def resolve_photos(self, info, **kwargs):
         return Photo.objects.filter(**kwargs)
 
@@ -188,6 +196,8 @@ class Query:
         room_id=graphene.ID(required=True),
         name__icontains=graphene.String()
     )
+
+    @access_required
     def resolve_threads(self, info, **kwargs):
         return ThreadModel.objects.filter(**kwargs)
 
@@ -195,6 +205,8 @@ class Query:
         ThreadCommentType,
         thread_id=graphene.ID(required=True)
     )
+
+    @access_required
     def resolve_thread_comments(self, info, **kwargs):
         return ThreadComment.objects.filter(**kwargs)
 
