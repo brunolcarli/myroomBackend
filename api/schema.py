@@ -161,6 +161,7 @@ class Query:
 
     @access_required
     def resolve_users(self, info, **kwargs):
+        kwargs.pop('user')
         return UserModel.objects.filter(**kwargs)
 
     rooms = graphene.List(
@@ -171,6 +172,7 @@ class Query:
 
     @access_required
     def resolve_rooms(self, info, **kwargs):
+        kwargs.pop('user')
         return Room.objects.filter(**kwargs)
 
     articles = graphene.List(
@@ -180,6 +182,7 @@ class Query:
 
     @access_required
     def resolve_articles(self, info, **kwargs):
+        kwargs.pop('user')
         return Article.objects.filter(**kwargs)
 
     photos = graphene.List(
@@ -189,6 +192,7 @@ class Query:
 
     @access_required
     def resolve_photos(self, info, **kwargs):
+        kwargs.pop('user')
         return Photo.objects.filter(**kwargs)
 
     threads = graphene.List(
@@ -208,6 +212,7 @@ class Query:
 
     @access_required
     def resolve_thread_comments(self, info, **kwargs):
+        kwargs.pop('user')
         return ThreadComment.objects.filter(**kwargs)
 
 
