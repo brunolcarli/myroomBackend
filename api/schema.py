@@ -203,6 +203,7 @@ class Query:
 
     @access_required
     def resolve_threads(self, info, **kwargs):
+        kwargs.pop('user')
         return ThreadModel.objects.filter(**kwargs)
 
     thread_comments = graphene.List(
